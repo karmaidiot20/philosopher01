@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>나와 닮은 사상가 찾기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 로그인 없이 쓰는 단독 파일판. 학생: 이름 → 11문항 → 결과와 제출용 한 줄. 선생님: 제출된 줄을 붙여 넣어 사상가 지도와 배정안 만들기 */
+:root {
+  --bg: #F3F4F8; --surface: #FFFFFF; --ink: #1B2140; --muted: #586079; --line: #DADDE8;
+  --accent: #2C46B8; --accent-soft: #E6EAFA; --warn: #B3261E; --ok: #2E7D4F;
+  --c-confucius: #B4442E; --c-laozi: #3B8550; --c-buddha: #A8760C; --c-aristotle: #3B5BC0; --c-kant: #6A4BA8; --c-bentham: #1B7F98;
+  --font-display: "Black Han Sans", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-quote: "Gowun Batang", "Batang", "AppleMyungjo", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12152A; --surface: #1C2140; --ink: #ECEEF8; --muted: #A7ADC6; --line: #323A63;
+    --accent: #8FA3FF; --accent-soft: #262E5A; --warn: #FF8A80; --ok: #7FD39B;
+    --c-confucius: #F08A72; --c-laozi: #7FCB93; --c-buddha: #E8BC55; --c-aristotle: #8EA6FF; --c-kant: #B79BF0; --c-bentham: #6FC9DD;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 680px; margin: 0 auto; padding-block: 32px 48px; display: flex; flex-direction: column; gap: 24px; }
+.wrap.wide { max-width: 1040px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: clamp(34px, 8vw, 52px); }
+h2 { font-size: clamp(24px, 5.5vw, 32px); }
+h3 { font-size: 22px; }
+p { margin: 0; }
+.eyebrow { font-size: 13px; letter-spacing: .08em; color: var(--accent); font-weight: 700; }
+.lead { color: var(--muted); font-size: 17px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.label { font-weight: 700; }
+.note { font-size: 14px; color: var(--muted); }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.btn { border: none; border-radius: 999px; padding: 12px 24px; font-weight: 700; font-size: 16px; min-height: 48px; }
+.btn-primary { background: var(--accent); color: var(--surface); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.status { font-size: 14px; min-height: 1.4em; color: var(--ok); }
+input[type=text], textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 16px; width: 100%; }
+input[type=text] { font-size: 18px; max-width: 320px; }
+textarea { min-height: 180px; font-size: 15px; line-height: 1.6; resize: vertical; }
+.roster { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.chip { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
+.chip b { font-family: var(--font-display); font-weight: 400; font-size: 19px; }
+.chip span { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.how { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 15px; padding-left: 20px; margin: 0; }
+.progress { display: flex; gap: 4px; }
+.progress i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.progress i.on { background: var(--accent); }
+.qmeta { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.qtext { font-family: var(--font-quote); font-weight: 700; font-size: clamp(21px, 4.8vw, 26px); line-height: 1.45; }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt { text-align: left; background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 14px; padding: 16px 18px; font-size: 16px; line-height: 1.5; display: flex; gap: 12px; align-items: flex-start; }
+.opt:hover { border-color: var(--accent); }
+.opt.picked { border-color: var(--accent); background: var(--accent-soft); }
+.opt .letter { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--muted); margin-top: 1px; }
+.opt.picked .letter { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hero { border-radius: 20px; padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); border: 2px solid var(--tc); }
+.hero .group { font-size: 14px; font-weight: 700; color: var(--tc); letter-spacing: .06em; }
+.hero h2 { font-size: clamp(40px, 10vw, 60px); color: var(--tc); }
+.hero .tag { font-size: 18px; font-weight: 700; }
+.quote { font-family: var(--font-quote); font-size: 19px; line-height: 1.6; padding: 14px 18px; border-radius: 12px; background: var(--bg); }
+.kw { display: flex; flex-wrap: wrap; gap: 8px; }
+.kw span { font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--tc); color: var(--tc); font-weight: 500; }
+.matches { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 20px; }
+.matches small { color: var(--muted); display: block; font-size: 13px; }
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bar { display: grid; grid-template-columns: 112px minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-variant-numeric: tabular-nums; }
+.bar .name { font-weight: 700; font-size: 15px; }
+.bar .track { height: 14px; border-radius: 7px; background: var(--bg); overflow: hidden; }
+.bar .fill { display: block; height: 100%; border-radius: 7px; }
+.bar .pct { text-align: right; font-size: 14px; color: var(--muted); }
+.wish ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; }
+.code { font-size: 18px; font-weight: 700; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); border: 1.5px dashed var(--accent); user-select: all; word-break: keep-all; }
+.board-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.seg button { border: none; background: transparent; color: var(--muted); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 14px; min-height: 40px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.stats { display: flex; gap: 20px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.stats div { display: flex; flex-direction: column; }
+.stats b { font-family: var(--font-display); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.stats span { font-size: 13px; color: var(--muted); }
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.cell { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cell-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cell-head h3 { color: var(--tc); display: flex; align-items: center; gap: 8px; }
+.grp { font-size: 12px; color: var(--muted); }
+.count { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+.count.over { color: var(--warn); } .count.full { color: var(--ok); }
+.slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.slots i { height: 6px; border-radius: 3px; background: var(--line); }
+.slots i.on { background: var(--tc); }
+.people { display: flex; flex-wrap: wrap; gap: 6px; min-height: 34px; align-content: flex-start; }
+.person { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1.5px solid var(--tc); font-size: 15px; font-weight: 500; }
+.person em { font-style: normal; font-size: 11px; color: var(--muted); }
+.empty { font-size: 14px; color: var(--muted); }
+.warn { font-size: 14px; color: var(--warn); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 13px; color: var(--muted); }
+.k { font-weight: 700; }
+.foot { text-align: center; }
+.linkbtn { background: none; border: none; color: var(--muted); text-decoration: underline; font-size: 14px; padding: 8px; min-height: 44px; }
+@media (max-width: 820px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) {
+  .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: 20px 16px; }
+  .bar { grid-template-columns: 92px minmax(0, 1fr) 42px; }
+}
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+<script>
+const THINKERS = {
+  confucius: { name: "공자", group: "1모둠", era: "기원전 6~5세기 · 중국", tag: "사람다움과 관계를 소중히 여기는 사람",
+    fit: "가족, 친구, 선후배 사이의 도리와 예의를 중요하게 여기고, 가까운 사람부터 진심으로 대하려는 당신.",
+    quote: "가까운 사람부터 진심으로 대하게. 좋은 세상은 거기서 시작된다네.",
+    kw: ["인(仁)", "예(禮)", "군자", "정명"] },
+  laozi: { name: "노자", group: "2모둠", era: "기원전 6세기 무렵 · 중국", tag: "억지로 하지 않고 자연스럽게 사는 사람",
+    fit: "경쟁과 비교보다 자기 속도와 여유를 소중히 하고, 정해진 기준을 한 번쯤 의심해 보는 당신.",
+    quote: "물처럼 다투지 않고 흐르면, 오히려 막히는 곳이 없다네.",
+    kw: ["도(道)", "무위자연", "상선약수", "소국과민"] },
+  buddha: { name: "붓다", group: "3모둠", era: "기원전 7~6세기 무렵 · 인도", tag: "집착을 내려놓고 마음의 평화를 찾는 사람",
+    fit: "괴로움이 어디서 오는지 마음을 들여다보고, 다른 사람과 생명의 아픔에 깊이 공감하는 당신.",
+    quote: "괴로움은 붙잡는 마음에서 생긴다. 내려놓고, 모든 것이 이어져 있음을 보아라.",
+    kw: ["연기", "무아", "사성제", "자비"] },
+  aristotle: { name: "아리스토텔레스", group: "4모둠", era: "기원전 384~322년 · 그리스", tag: "균형을 찾고 습관으로 성장하는 사람",
+    fit: "상황에 맞는 적절한 선을 찾고, 좋은 습관을 꾸준히 쌓아 더 나은 내가 되려는 당신.",
+    quote: "제비 한 마리가 왔다고 봄이 오지는 않네. 좋은 행동을 매일 쌓게.",
+    kw: ["행복", "덕", "중용", "습관"] },
+  kant: { name: "칸트", group: "5모둠", era: "1724~1804년 · 독일", tag: "결과보다 옳은 원칙을 지키는 사람",
+    fit: "누가 보지 않아도 원칙을 지키고, 누군가를 도구처럼 대하는 것을 참지 못하는 당신.",
+    quote: "모든 사람이 너처럼 행동해도 괜찮은지, 스스로 물어보게.",
+    kw: ["선의지", "정언 명령", "인간 존엄", "자율"] },
+  bentham: { name: "벤담", group: "6모둠", era: "1748~1832년 · 영국", tag: "더 많은 사람의 더 큰 행복을 따져 보는 사람",
+    fit: "결과를 꼼꼼히 따져 보고, 더 많은 사람의 즐거움은 늘리고 고통은 줄이는 쪽을 고르려는 당신.",
+    quote: "사람은 누구나 고통을 피하고 즐거움을 찾는다네. 가장 많은 사람이 행복해지는 쪽을 계산해 보게.",
+    kw: ["공리주의", "최대 다수의 최대 행복", "결과론", "쾌락 계산"] }
+};
+const ORDER = ["confucius", "laozi", "buddha", "aristotle", "kant", "bentham"];
+const ALIAS = { "공자": "confucius", "노자": "laozi", "붓다": "buddha", "석가모니": "buddha", "부처": "buddha",
+  "아리스토텔레스": "aristotle", "칸트": "kant", "벤담": "bentham",
+  "1모둠": "confucius", "2모둠": "laozi", "3모둠": "buddha", "4모둠": "aristotle", "5모둠": "kant", "6모둠": "bentham" };
+
+const QUESTIONS = [
+  { q: "시험 시간, 친한 친구가 몰래 커닝하는 것을 봤다. 나는?", o: [
+    ["들킬지와 상관없이 옳지 않은 일이야. 친구에게 분명히 말한다.", "kant"],
+    ["이 일이 반 전체에 어떤 영향을 줄지 따져 보고 어떻게 할지 정한다.", "bentham"],
+    ["친한 사이니까 따로 조용히 불러서 바른 길로 이끌어 준다.", "confucius"],
+    ["너무 다그치지도, 모른 척하지도 않게 상황에 맞게 대처한다.", "aristotle"]] },
+  { q: "시험 성적이 기대보다 훨씬 낮게 나왔다. 나는?", o: [
+    ["점수에 매달릴수록 더 괴로워. 실망하는 내 마음을 가만히 들여다본다.", "buddha"],
+    ["1등만 정답은 아니야. 남과 비교하지 않고 내 속도대로 간다.", "laozi"],
+    ["공부 습관을 점검하고, 매일 지킬 수 있는 루틴을 새로 만든다.", "aristotle"],
+    ["응원해 준 부모님과 선생님을 생각하며 다시 마음을 다잡는다.", "confucius"]] },
+  { q: "학급 회의에서 체육대회 종목을 정하고 있다. 가장 좋은 방법은?", o: [
+    ["가장 많은 친구가 즐겁게 참여할 수 있는 종목을 고른다.", "bentham"],
+    ["단 한 명도 소외되거나 희생되지 않는 방식으로 정한다.", "kant"],
+    ["반장, 기록 담당 등 각자 맡은 역할을 제대로 하면 잘 정해진다.", "confucius"],
+    ["규칙을 너무 많이 만들지 말고 자연스럽게 흘러가게 둔다.", "laozi"]] },
+  { q: "내가 생각하는 '행복한 삶'에 가장 가까운 것은?", o: [
+    ["내가 가진 능력을 최대한 발휘하며 계속 성장하는 삶", "aristotle"],
+    ["욕심에 휘둘리지 않고 마음이 평온한 삶", "buddha"],
+    ["나 덕분에 많은 사람이 기쁨을 느끼는 삶", "bentham"],
+    ["바쁘게 쫓기지 않는, 소박하고 여유로운 삶", "laozi"]] },
+  { q: "기후 위기 뉴스를 보았다. 가장 공감 가는 생각은?", o: [
+    ["모든 생명은 이어져 있어. 다른 생명의 고통도 내 일처럼 느껴진다.", "buddha"],
+    ["사람이 자연을 억지로 바꾸려 해서 생긴 문제야. 자연의 흐름으로 돌아가야 해.", "laozi"],
+    ["어떤 정책이 가장 많은 존재의 고통을 줄일지 따져 봐야 해.", "bentham"],
+    ["미래 세대도 존중받아야 할 사람이야. 우리 편하자고 그들을 희생시키면 안 돼.", "kant"]] },
+  { q: "친구가 새로 한 머리 스타일이 솔직히 별로다. 친구가 \"어때?\"라고 묻는다면?", o: [
+    ["거짓말은 할 수 없어. 솔직하되 친구를 존중하는 말로 답한다.", "kant"],
+    ["친구 기분이 좋아지는 게 제일 중요하니 칭찬해 준다.", "bentham"],
+    ["너무 냉정하지도, 너무 부풀리지도 않게 적당한 말을 고른다.", "aristotle"],
+    ["내가 친구라면 어떤 말을 듣고 싶을지 친구 마음을 헤아려 답한다.", "confucius"]] },
+  { q: "SNS 속 친구들의 화려한 일상을 보니 부럽다. 나는?", o: [
+    ["비교하는 마음이 괴로움을 만든다는 걸 알아차리고 흘려보낸다.", "buddha"],
+    ["좋아 보이는 것도 결국 상대적이야. 내 삶도 그대로 괜찮다.", "laozi"],
+    ["부러운 마음을 계기로 나도 좋은 습관 하나를 시작해 본다.", "aristotle"],
+    ["보여 주는 것보다 가까운 사람과의 진짜 관계가 더 소중하다고 생각한다.", "confucius"]] },
+  { q: "학교 규칙(교칙)에 대한 내 생각에 가장 가까운 것은?", o: [
+    ["규칙은 예외 없이 지켜야 의미가 있어. 모두가 어기면 규칙이 무너진다.", "kant"],
+    ["규칙은 모두의 행복을 위해 있어. 행복을 해친다면 바꿔야 한다.", "bentham"],
+    ["규칙보다 서로를 대하는 마음가짐과 예의가 더 중요하다.", "confucius"],
+    ["규칙이 많아질수록 오히려 더 답답하고 어지러워진다.", "laozi"]] },
+  { q: "좋은 사람이 되려면 무엇이 가장 중요할까?", o: [
+    ["좋은 행동을 반복해서 몸에 익히는 것", "aristotle"],
+    ["나를 내려놓고 다른 사람의 아픔에 공감하는 것", "buddha"],
+    ["옳은 일을 칭찬이나 이익 때문이 아니라 옳기 때문에 하는 것", "kant"],
+    ["가족처럼 가까운 사람부터 진심으로 대하는 것", "confucius"]] },
+  { q: "모둠 과제에서 한 친구가 아무것도 하지 않는다. 나는?", o: [
+    ["모둠 전체에 가장 좋은 결과가 나오도록 역할을 다시 나눈다.", "bentham"],
+    ["그 친구도 사정이 있겠지. 다투지 않고 유연하게 넘긴다.", "laozi"],
+    ["필요한 때에, 지나치지 않은 말로 분명하게 이야기한다.", "aristotle"],
+    ["화를 내기 전에 먼저 내 마음과 그 친구의 마음을 살펴본다.", "buddha"]] },
+  { q: "누군가 나에게 상처 주는 말을 했다. 나는?", o: [
+    ["화도 지나가는 감정일 뿐. 붙잡지 않고 흘려보낸다.", "buddha"],
+    ["그 사람도 존중받아야 할 사람이야. 똑같이 모욕하지는 않는다.", "kant"],
+    ["화낼 만한 일에는 적절한 만큼 분명하게 화를 낸다.", "aristotle"],
+    ["물처럼 부딪치지 않고 한 걸음 물러나 거리를 둔다.", "laozi"]] }
+];
+const MAX = Object.fromEntries(ORDER.map(k => [k, 0]));
+QUESTIONS.forEach(q => q.o.forEach(([, k]) => MAX[k]++));
+
+const STORE_KEY = "thinker-match-teacher-input";
+function loadPaste() { try { return localStorage.getItem(STORE_KEY) || ""; } catch (e) { return ""; } }
+function savePaste(v) { try { localStorage.setItem(STORE_KEY, v); } catch (e) {} }
+
+const state = { step: "start", i: 0, answers: [], name: "", paste: loadPaste(), boardMode: "wish" };
+const app = document.getElementById("app");
+const LETTERS = ["가", "나", "다", "라"];
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])); }
+function particle(w, a, b) { const c = w.charCodeAt(w.length - 1) - 0xAC00; return (c >= 0 && c <= 11171 && c % 28) ? a : b; }
+
+function scores() {
+  const raw = Object.fromEntries(ORDER.map(k => [k, 0]));
+  state.answers.forEach((j, i) => { if (j != null) raw[QUESTIONS[i].o[j][1]]++; });
+  return ORDER.map(k => ({ k, pct: Math.round(raw[k] / MAX[k] * 100), raw: raw[k] }))
+    .sort((a, b) => b.pct - a.pct || b.raw - a.raw || ORDER.indexOf(a.k) - ORDER.indexOf(b.k));
+}
+
+/* ---------- 학생: 시작 ---------- */
+function renderStart() {
+  app.className = "wrap";
+  app.innerHTML = `
+    <header style="display:flex;flex-direction:column;gap:12px">
+      <p class="eyebrow">사상가 탐구 수업 · 모둠 고르기</p>
+      <h1>나와 닮은 사상가 찾기</h1>
+      <p class="lead">일상의 고민과 사회 문제에 대한 11가지 질문에 답하면, 여러분의 생각과 가장 닮은 사상가를 알려 줘요. 정답은 없으니 솔직하게 골라 주세요.</p>
+    </header>
+    <section class="panel">
+      <form id="nameForm" style="display:flex;flex-direction:column;gap:8px">
+        <label class="label" for="studentName">내 이름</label>
+        <input type="text" id="studentName" autocomplete="off" maxlength="20" placeholder="예: 김민지" value="${esc(state.name)}">
+        <div class="row"><button class="btn btn-primary" id="startBtn" type="submit" ${state.name.trim() ? "" : "disabled"}>시작하기</button><span class="note">약 5분 걸려요</span></div>
+      </form>
+    </section>
+    <section class="panel">
+      <p class="label">우리 반 사상가 6명</p>
+      <div class="roster">${ORDER.map(k => `<div class="chip"><b><span class="dot" style="background:var(--c-${k})"></span> ${THINKERS[k].name}</b><span>${THINKERS[k].group} · ${THINKERS[k].tag}</span></div>`).join("")}</div>
+    </section>
+    <section class="panel">
+      <ol class="how">
+        <li>이름을 쓰고, 질문마다 내 생각과 가장 가까운 보기를 하나 고릅니다.</li>
+        <li>결과 화면에 나오는 '제출용 한 줄'을 선생님이 알려 준 곳에 제출합니다.</li>
+        <li>선생님이 반 전체 지망을 보고 4명씩 6모둠으로 배정합니다.</li>
+      </ol>
+    </section>
+    <div class="foot"><button type="button" class="linkbtn" id="teacherBtn">선생님용 모둠 배정 화면</button></div>`;
+  const input = document.getElementById("studentName"), btn = document.getElementById("startBtn");
+  input.oninput = () => { state.name = input.value; btn.disabled = !input.value.trim(); };
+  document.getElementById("nameForm").onsubmit = e => {
+    e.preventDefault();
+    state.name = input.value.trim().replace(/[,\t/]/g, " ").slice(0, 20);
+    if (!state.name) return;
+    state.step = "q"; state.i = 0; state.answers = []; render();
+  };
+  document.getElementById("teacherBtn").onclick = () => { state.step = "teacher"; render(); };
+}
+
+/* ---------- 학생: 질문 ---------- */
+function renderQuestion() {
+  app.className = "wrap";
+  const q = QUESTIONS[state.i], picked = state.answers[state.i];
+  app.innerHTML = `
+    <div class="progress" aria-hidden="true">${QUESTIONS.map((_, j) => `<i class="${j <= state.i ? "on" : ""}"></i>`).join("")}</div>
+    <div class="qmeta"><span>${esc(state.name)} · 질문 ${state.i + 1} / ${QUESTIONS.length}</span><span>내 생각과 가장 가까운 것 하나</span></div>
+    <h2 class="qtext" id="qtitle">${esc(q.q)}</h2>
+    <div class="opts" role="group" aria-labelledby="qtitle">
+      ${q.o.map(([t], j) => `<button type="button" class="opt ${picked === j ? "picked" : ""}" data-j="${j}"><span class="letter">${LETTERS[j]}</span><span>${esc(t)}</span></button>`).join("")}
+    </div>
+    <div class="row">${state.i > 0 ? `<button class="btn btn-ghost" id="backBtn" type="button">이전 질문</button>` : `<button class="btn btn-ghost" id="homeBtn" type="button">처음으로</button>`}</div>`;
+  app.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    state.answers[state.i] = Number(b.dataset.j);
+    if (state.i < QUESTIONS.length - 1) state.i++; else state.step = "result";
+    render();
+  });
+  const back = document.getElementById("backBtn"); if (back) back.onclick = () => { state.i--; render(); };
+  const home = document.getElementById("homeBtn"); if (home) home.onclick = () => { state.step = "start"; render(); };
+}
+
+/* ---------- 학생: 결과 ---------- */
+function renderResult() {
+  app.className = "wrap";
+  const ranked = scores(), top = ranked[0].k, T = THINKERS[top];
+  const mine = state.answers.map((j, i) => ({ i, j })).filter(({ i, j }) => QUESTIONS[i].o[j][1] === top).slice(0, 3);
+  const code = [state.name, ...ranked.slice(0, 3).map(r => `${THINKERS[r.k].name} ${r.pct}`)].join(", ");
+  app.innerHTML = `
+    <p class="eyebrow">${esc(state.name)} 학생과 가장 닮은 사상가</p>
+    <section class="hero" style="--tc:var(--c-${top})">
+      <p class="group">${T.group} · ${T.era}</p>
+      <h2>${T.name}</h2>
+      <p class="tag">${T.tag}</p>
+      <p>${T.fit}</p>
+      <p class="quote">“${T.quote}”</p>
+      <div class="kw">${T.kw.map(w => `<span>${w}</span>`).join("")}</div>
+    </section>
+    <section class="panel wish">
+      <p class="label">제출용 한 줄</p>
+      <p class="code" id="codeBox">${esc(code)}</p>
+      <div class="row"><button class="btn btn-primary" id="copyBtn" type="button">복사하기</button><span class="status" id="copyStatus" role="status"></span></div>
+      <p class="note">이 한 줄을 그대로 복사해 선생님이 알려 준 곳(설문지, 게시판 등)에 붙여 넣으세요. 이름 다음은 1·2·3지망 사상가와 닮은 정도예요.</p>
+    </section>
+    <section class="panel">
+      <p class="label">${T.name}${particle(T.name, "과", "와")} 닮았던 나의 답</p>
+      <ul class="matches">${mine.map(({ i, j }) => `<li>${esc(QUESTIONS[i].o[j][0])}<small>질문 ${i + 1}. ${esc(QUESTIONS[i].q)}</small></li>`).join("")}</ul>
+    </section>
+    <section class="panel">
+      <p class="label">6명과 나의 닮은 정도</p>
+      <div class="bars">${ranked.map(r => `<div class="bar"><span class="name" style="color:var(--c-${r.k})">${THINKERS[r.k].name}</span><span class="track"><span class="fill" style="width:${Math.max(r.pct, 2)}%;background:var(--c-${r.k})"></span></span><span class="pct">${r.pct}%</span></div>`).join("")}</div>
+      <p class="note">닮은 정도 = 그 사상가의 보기를 고른 횟수 ÷ 그 사상가의 보기가 나온 횟수</p>
+    </section>
+    <p class="note">결과는 참고용이에요. 모둠은 4명씩 6모둠이라, 선생님이 지망을 반영해 인원을 맞춰 배정합니다.</p>
+    <div class="row"><button class="btn btn-ghost" id="againBtn" type="button">다시 하기</button></div>`;
+  document.getElementById("copyBtn").onclick = async () => {
+    const st = document.getElementById("copyStatus");
+    try { await navigator.clipboard.writeText(code); st.textContent = "복사했어요."; }
+    catch (e) {
+      const r = document.createRange(); r.selectNodeContents(document.getElementById("codeBox"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      st.textContent = "글자를 선택해 두었어요. 길게 눌러 복사해 주세요.";
+    }
+  };
+  document.getElementById("againBtn").onclick = () => { state.step = "start"; state.answers = []; render(); };
+}
+
+/* ---------- 선생님: 붙여 넣기 → 지도와 배정안 ---------- */
+function parseLines(text) {
+  const rows = [], bad = [], seen = new Map();
+  text.split(/\r?\n/).forEach((line, n) => {
+    const raw = line.trim(); if (!raw) return;
+    const parts = raw.split(/\t|,|\/|·/).map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) { bad.push(n + 1); return; }
+    const name = parts[0].slice(0, 20), wish = [], pct = {};
+    parts.slice(1).forEach(p => {
+      const m = p.match(/^(.+?)\s*(\d{1,3})?\s*%?$/); if (!m) return;
+      const k = ALIAS[m[1].replace(/\s/g, "")]; if (!k || wish.includes(k)) return;
+      wish.push(k); pct[k] = m[2] ? Math.min(100, Number(m[2])) : 0;
+    });
+    if (!wish.length) { bad.push(n + 1); return; }
+    const row = { id: "r" + n, name, wish: wish.slice(0, 3), pct, order: n };
+    seen.set(name, row);
+  });
+  seen.forEach(r => rows.push(r));
+  return { rows, bad };
+}
+function assignGroups(rows) {
+  const cap = Math.max(1, Math.ceil(rows.length / ORDER.length));
+  const out = {}, count = Object.fromEntries(ORDER.map(k => [k, 0]));
+  for (let r = 0; r < 3; r++) {
+    const pool = rows.filter(p => !out[p.id] && p.wish.length > r);
+    pool.sort((a, b) => ((b.pct[b.wish.at(r)] || 0) - (a.pct[a.wish.at(r)] || 0)) || (a.order - b.order));
+    pool.forEach(p => { const k = p.wish.at(r); if (count[k] < cap) { out[p.id] = { k, rank: r + 1 }; count[k]++; } });
+  }
+  rows.filter(p => !out[p.id]).forEach(p => {
+    const k = ORDER.slice().sort((a, b) => count[a] - count[b]).at(0);
+    out[p.id] = { k, rank: 0 }; count[k]++;
+  });
+  return { out, cap };
+}
+function renderTeacher() {
+  app.className = "wrap wide";
+  const { rows, bad } = parseLines(state.paste);
+  const assign = state.boardMode === "assign" ? assignGroups(rows) : null;
+  const cap = assign ? assign.cap : Math.max(1, Math.ceil(rows.length / ORDER.length));
+  const buckets = Object.fromEntries(ORDER.map(k => [k, []]));
+  rows.forEach(p => {
+    if (assign) { const a = assign.out[p.id]; buckets[a.k].push({ p, tag: a.rank ? `${a.rank}지망` : "조정" }); }
+    else buckets[p.wish.at(0)].push({ p, tag: "" });
+  });
+  const crowded = ORDER.filter(k => buckets[k].length > cap).length;
+  app.innerHTML = `
+    <header class="board-head">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+        <p class="eyebrow">선생님용</p>
+        <h1>우리 반 사상가 지도</h1>
+        <p class="note">학생들이 제출한 한 줄을 아래 칸에 붙여 넣으면 지도와 배정안이 바로 만들어져요.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+        <div class="stats">
+          <div><b>${rows.length}</b><span>참여 학생</span></div>
+          <div><b>${cap}</b><span>모둠 정원</span></div>
+          <div><b style="color:${crowded ? "var(--warn)" : "var(--ok)"}">${crowded}</b><span>정원 넘은 모둠</span></div>
+        </div>
+        <div class="seg" role="group" aria-label="보기 방식"><button type="button" id="mWish" aria-pressed="${!assign}">1지망 보기</button><button type="button" id="mAssign" aria-pressed="${!!assign}">배정안 보기</button></div>
+      </div>
+    </header>
+    <section class="panel">
+      <label class="label" for="pasteBox">학생 제출 내용 붙여 넣기 (한 줄에 한 명)</label>
+      <textarea id="pasteBox" placeholder="김민지, 칸트 43, 벤담 38, 공자 29&#10;이준호, 노자 50, 붓다 43, 아리스토텔레스 25">${esc(state.paste)}</textarea>
+      <p class="note">구글 설문 응답 시트에서 '제출용 한 줄' 열을 통째로 복사해 붙여 넣어도 돼요. 같은 이름이 여러 번 있으면 마지막 줄만 반영해요. 입력 내용은 이 브라우저에만 저장돼요.</p>
+      ${bad.length ? `<p class="warn">${bad.join(", ")}번째 줄은 읽지 못했어요. "이름, 사상가, 사상가, 사상가" 형식인지 확인해 주세요.</p>` : ""}
+      <div class="row"><button type="button" class="btn btn-ghost" id="clearBtn">입력 지우기</button></div>
+    </section>
+    <section class="board">
+      ${ORDER.map(k => {
+        const list = buckets[k], n = list.length, cls = n > cap ? "over" : n === cap ? "full" : "";
+        return `<article class="cell" style="--tc:var(--c-${k})">
+          <div class="cell-head"><h3><span class="dot" style="background:var(--c-${k})"></span>${THINKERS[k].name}</h3><span class="count ${cls}">${n} / ${cap}명${n > cap ? " · 초과" : ""}</span></div>
+          <span class="grp">${THINKERS[k].group} · ${THINKERS[k].kw.slice(0, 2).join(" · ")}</span>
+          <div class="slots" aria-hidden="true">${Array.from({ length: 4 }, (_, j) => `<i class="${j < Math.min(n, 4) ? "on" : ""}"></i>`).join("")}</div>
+          <div class="people">${n ? list.map(({ p, tag }) => `<span class="person">${esc(p.name)}${tag ? `<em>${tag}</em>` : ""}</span>`).join("") : `<span class="empty">아직 없어요</span>`}</div>
+        </article>`;
+      }).join("")}
+    </section>
+    ${rows.length ? `<section class="panel"><p class="label">전체 명단 · 1~3지망</p><div class="table-wrap"><table>
+      <thead><tr><th>이름</th><th>1지망</th><th>2지망</th><th>3지망</th>${assign ? "<th>배정</th>" : ""}</tr></thead>
+      <tbody>${rows.slice().sort((a, b) => a.name.localeCompare(b.name, "ko")).map(p => `<tr><td>${esc(p.name)}</td>${[0, 1, 2].map(r => { const k = p.wish.at(r); return `<td>${k ? `<span class="k" style="color:var(--c-${k})">${THINKERS[k].name}</span>${p.pct[k] ? " " + p.pct[k] + "%" : ""}` : "-"}</td>`; }).join("")}${assign ? `<td><span class="k" style="color:var(--c-${assign.out[p.id].k})">${THINKERS[assign.out[p.id].k].group} ${THINKERS[assign.out[p.id].k].name}</span></td>` : ""}</tr>`).join("")}</tbody>
+    </table></div><p class="note">배정안: 1지망부터 차례로 정원을 채우고, 넘치면 닮은 정도가 높은 학생이 우선이에요. 남은 학생은 2·3지망, 그래도 남으면 인원이 적은 모둠으로 조정해요.</p></section>` : ""}
+    <div class="row"><button class="btn btn-ghost" id="homeBtn" type="button">학생 화면으로</button></div>`;
+  const box = document.getElementById("pasteBox");
+  box.onchange = () => { state.paste = box.value; savePaste(state.paste); renderTeacher(); };
+  box.oninput = () => { clearTimeout(box._t); box._t = setTimeout(() => { state.paste = box.value; savePaste(state.paste); const pos = box.selectionStart; renderTeacher(); const nb = document.getElementById("pasteBox"); nb.focus(); nb.setSelectionRange(pos, pos); }, 600); };
+  document.getElementById("clearBtn").onclick = () => { state.paste = ""; savePaste(""); renderTeacher(); };
+  document.getElementById("mWish").onclick = () => { state.boardMode = "wish"; renderTeacher(); };
+  document.getElementById("mAssign").onclick = () => { state.boardMode = "assign"; renderTeacher(); };
+  document.getElementById("homeBtn").onclick = () => { state.step = "start"; render(); };
+}
+
+function render() {
+  if (state.step === "start") renderStart();
+  else if (state.step === "q") renderQuestion();
+  else if (state.step === "result") renderResult();
+  else renderTeacher();
+  window.scrollTo(0, 0);
+}
+if (location.hash === "#teacher") state.step = "teacher";
+window.addEventListener("hashchange", () => { if (location.hash === "#teacher") { state.step = "teacher"; render(); } });
+render();
+</script>
+</body>
+</html>
